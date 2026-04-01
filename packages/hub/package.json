@@ -1,7 +1,8 @@
 {
   "name": "@anvil-tools/hub",
   "version": "0.3.0",
-  "description": "Self-hosted Anvil tool registry server — self-hosted hub",
+  "private": true,
+  "description": "Self-hosted Anvil tool registry server",
   "type": "module",
   "main": "./dist/server.js",
   "bin": { "anvil-hub": "./dist/server.js" },
