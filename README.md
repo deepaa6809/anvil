@@ -42,8 +42,21 @@ Every agent runtime has its own tool format. You end up maintaining:
 ```bash
 npm install -g @anvil-tools/cli
 anvil init my-tools && cd my-tools
-anvil validate
-anvil compile
+anvil compile --target mcp            # generate MCP server
+anvil serve --stub tools.anvil.yaml   # or run directly as MCP
+```
+
+Use in Claude Desktop — zero codegen needed:
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "npx",
+      "args": ["@anvil-tools/cli", "serve", "--stub", "tools.anvil.yaml"]
+    }
+  }
+}
 ```
 
 ## Define Once
@@ -101,8 +114,12 @@ tools:
 
 ## Compile Everywhere
 
+No config file needed. Targets are built into the CLI:
+
 ```bash
-anvil compile   # → MCP server, OpenAPI spec, TypeScript SDK, docs, eval tests, agent schema, CLI...
+anvil compile --target mcp                    # just MCP
+anvil compile --target mcp,docs,anthropic     # pick targets
+anvil compile --all                           # all 10 targets
 ```
 
 | Target | Package | What it generates |
@@ -179,9 +196,10 @@ const handler = compose(
 |---------|-------------|
 | `anvil init` | Scaffold a new project |
 | `anvil validate` | Validate definitions with rich diagnostics |
-| `anvil compile` | Compile to all configured targets |
+| `anvil compile --target mcp` | Compile to targets (no config needed) |
+| `anvil compile --all` | Compile to all 10 targets |
+| `anvil serve --stub` | Run as MCP server (works with Claude Desktop, Cursor) |
 | `anvil dev` | Watch mode — recompile on change |
-| `anvil serve` | Start a local MCP server for testing |
 | `anvil publish` | Publish to the registry |
 | `anvil search` | Search for published tools |
 | `anvil install` | Install a tool definition |

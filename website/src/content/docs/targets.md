@@ -19,28 +19,34 @@ date: "2025-03-31"
 | OpenAI | `@anvil-tools/target-openai` | GPT function calling |
 | Vercel AI | `@anvil-tools/target-vercel-ai` | AI SDK tools |
 
-## Configuration
+## Zero-Config Usage
 
-Configure targets in `anvil.config.ts`:
+All targets are built into the CLI — no config file or extra installs needed:
+
+```bash
+anvil compile --target mcp                # one target
+anvil compile --target mcp,docs,openapi   # multiple targets
+anvil compile --all                       # all 10 targets
+```
+
+## Advanced Configuration
+
+For custom options, use `anvil.config.ts`:
 
 ```typescript
 import { defineConfig } from '@anvil-tools/compiler';
 import { mcp } from '@anvil-tools/target-mcp';
 import { openapi } from '@anvil-tools/target-openapi';
 import { docs } from '@anvil-tools/target-docs';
-import { agentSchema } from '@anvil-tools/target-agent-schema';
-import { evalTarget } from '@anvil-tools/target-eval';
 
 export default defineConfig({
   tools: './**/*.anvil.yaml',
   targets: [
     mcp({ transport: 'stdio' }),
-    openapi({ format: 'yaml' }),
-    docs(),
-    agentSchema(),
-    evalTarget({ framework: 'vitest' }),
+    openapi({ format: 'json' }),
+    docs({ singleFile: true }),
   ],
-  outDir: './out',
+  outDir: './dist',
 });
 ```
 

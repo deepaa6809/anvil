@@ -1,7 +1,7 @@
 ---
 title: CLI Reference
-description: Complete reference for all Anvil CLI commands — init, validate, compile, dev, serve, publish, search, doctor.
-date: "2025-03-31"
+description: Complete reference for all Anvil CLI commands.
+date: "2025-04-01"
 ---
 
 ## anvil init
@@ -27,16 +27,62 @@ anvil validate [patterns...] [--strict]
 
 ## anvil compile
 
-Compile tool definitions to target outputs.
+Compile tool definitions to target outputs. No config file required.
 
 ```bash
-anvil compile [options]
+# Zero-config (recommended):
+anvil compile --target mcp                    # just MCP server
+anvil compile --target mcp,docs,anthropic     # multiple targets
+anvil compile --all                           # all 10 targets
+
+# With config:
+anvil compile -c anvil.config.ts
+
+# Options:
+anvil compile --target mcp -o ./dist          # custom output dir
+anvil compile --target mcp --dry-run          # preview without writing
+```
+
+Available targets: `mcp`, `openapi`, `docs`, `agent-schema`, `eval`, `sdk-ts`, `cli-gen`, `anthropic`, `openai`, `vercel-ai`
+
+## anvil serve
+
+Start a production MCP server directly from .anvil.yaml files. Uses `@modelcontextprotocol/sdk` — works with Claude Desktop, Cursor, Claude Code, and any MCP client.
+
+```bash
+anvil serve [patterns...] [options]
 
 Options:
-  -c, --config <path>   Config file (default: anvil.config.ts)
-  -o, --out-dir <dir>   Output directory
-  --target <name>       Only compile a specific target
-  --dry-run             Show what would be generated
+  --stub              Return example data for all tools
+  --handler <file>    Load custom handler implementations
+```
+
+### Use with Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "npx",
+      "args": ["@anvil-tools/cli", "serve", "--stub", "tools.anvil.yaml"]
+    }
+  }
+}
+```
+
+### Custom handlers
+
+```bash
+anvil serve tools.anvil.yaml --handler ./my-handlers.js
+```
+
+Where `my-handlers.js` exports functions named after your tools:
+
+```javascript
+export async function get_weather({ location }) {
+  const res = await fetch(`https://api.weather.com?q=${location}`);
+  return res.json();
+}
 ```
 
 ## anvil dev
@@ -45,18 +91,6 @@ Watch mode — recompile on file changes.
 
 ```bash
 anvil dev [-c config] [-o out-dir]
-```
-
-## anvil serve
-
-Start a local MCP server for testing.
-
-```bash
-anvil serve [patterns...] [options]
-
-Options:
-  -p, --port <port>   Use HTTP transport on this port
-  --stub              Return example data for unimplemented tools
 ```
 
 ## anvil publish
@@ -68,7 +102,7 @@ anvil publish [file] [options]
 
 Options:
   --registry <url>   Registry URL (default: localhost:4400)
-  --token <token>    Auth token (or set ANVIL_TOKEN)
+  --token <token>    Auth token
   --tag <tags...>    Tags for discovery
   --dry-run          Validate without publishing
   --local            Publish to local registry
@@ -82,19 +116,30 @@ Search the registry for tool definitions.
 anvil search <query> [--tag <tags...>] [--local]
 ```
 
+## anvil install
+
+Download tool definitions from the registry.
+
+```bash
+anvil install <package>            # latest version
+anvil install <package>@1.0.0     # specific version
+anvil install <package> --compile  # validate after download
+```
+
+## anvil login
+
+Save registry auth token.
+
+```bash
+anvil login --token <token> --registry <url>
+```
+
 ## anvil doctor
 
-Check your project for common issues and get recommendations.
+Check your project for issues and get recommendations.
 
 ```bash
 anvil doctor
 ```
 
-Checks:
-- Node.js version compatibility
-- Missing or invalid anvil.config.ts
-- Tool definition validation
-- Missing agent descriptions
-- Missing examples for eval
-- Permission declarations
-- Deprecated field usage
+Checks: Node.js version, config file, tool definitions, agent descriptions, examples, permissions.

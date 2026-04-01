@@ -115,10 +115,10 @@ tools:
       {/* Targets */}
       <section className="section" id="targets">
         <div className="container">
-          <h2>Ten targets. One command.</h2>
+          <h2>Ten targets. Zero config.</h2>
           <p className="section-sub">
-            <code>anvil compile</code> generates production-ready outputs for every platform.
-            Each target is a plugin — add your own.
+            <code>anvil compile --target mcp</code> — no config file needed.
+            All targets are built into the CLI. Or use <code>--all</code> for everything.
           </p>
           <div className="grid-2">
             {TARGETS.map((t, i) => (
@@ -205,8 +205,8 @@ tools:
             {[
               { cmd: 'npm install -g @anvil-tools/cli' },
               { cmd: 'anvil init my-tools && cd my-tools' },
-              { cmd: 'anvil validate', note: 'Checks definitions with rich diagnostics' },
-              { cmd: 'anvil compile', note: 'Generates all configured targets' },
+              { cmd: 'anvil compile --target mcp', note: 'Zero config — MCP server generated' },
+              { cmd: 'anvil serve --stub', note: 'Live MCP server for Claude Desktop / Cursor' },
             ].map((s, i) => (
               <div key={i} className="start-step">
                 <div className="step-num">{i + 1}</div>
