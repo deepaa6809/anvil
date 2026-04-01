@@ -1,0 +1,6 @@
+{
+    "buildCommand": "pnpm install && pnpm build",
+    "installCommand": "pnpm install --filter anvil-website...",
+    "outputDirectory": ".next",
+    "framework": "nextjs"
+  }
