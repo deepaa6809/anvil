@@ -1,0 +1,213 @@
+anvil: "1.0"
+
+service:
+  name: postgres-tools
+  version: "1.0.0"
+  description: PostgreSQL database tools for AI agents with safety controls
+  auth:
+    type: custom
+    env_var: DATABASE_URL
+  tags: [database, postgres, sql]
+
+tools:
+  query:
+    description: Execute a read-only SQL query against the database
+    agent:
+      description: |
+        Execute a SELECT query against PostgreSQL. This tool is READ-ONLY —
+        it cannot modify data. Use for data retrieval, aggregation, and analysis.
+        The query is run inside a read-only transaction for safety.
+      when_to_use:
+        - User asks about data in the database
+        - Agent needs to look up records
+        - User asks for data analysis or aggregation
+      when_not_to_use:
+        - User wants to modify data (use execute_mutation)
+        - User wants to change schema (use execute_migration)
+      tips:
+        - Always use LIMIT to prevent returning too many rows
+        - Use parameterized queries — never interpolate user input
+        - Prefer specific columns over SELECT *
+        - For large tables, always add WHERE clauses
+    parameters:
+      sql:
+        type: string
+        required: true
+        description: SQL SELECT query to execute
+        examples:
+          - "SELECT id, name, email FROM users WHERE active = true LIMIT 10"
+          - "SELECT COUNT(*) as total FROM orders WHERE created_at > $1"
+      params:
+        type: array
+        items:
+          type: string
+        description: Parameterized query values ($1, $2, etc.)
+    returns:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              _dynamic:
+                type: string
+                description: Dynamic columns vary by query
+            additional_properties: true
+          description: Query result rows
+        row_count:
+          type: integer
+          description: Number of rows returned
+        columns:
+          type: array
+          items:
+            type: string
+          description: Column names
+    permissions:
+      - type: database
+        target: postgres
+        methods: [SELECT]
+        reason: Read-only database access
+    side_effects: read
+    cost: low
+    idempotent: true
+    cache:
+      ttl: 10
+      vary_by: [sql]
+    errors:
+      syntax_error:
+        status: 400
+        message: SQL syntax error
+        agent_hint: Check SQL syntax — common issues are missing commas, unclosed quotes, or invalid column names
+      permission_denied:
+        status: 403
+        message: Query contains non-SELECT statements
+        agent_hint: This tool only supports SELECT queries. Use execute_mutation for INSERT/UPDATE/DELETE
+      timeout:
+        status: 408
+        message: Query exceeded timeout
+        agent_hint: Add more specific WHERE clauses or LIMIT to reduce result size
+        retryable: false
+    examples:
+      - name: list_users
+        input:
+          sql: "SELECT id, name, email FROM users WHERE active = true LIMIT 10"
+        output:
+          rows:
+            - { id: 1, name: "Alice", email: "alice@example.com" }
+            - { id: 2, name: "Bob", email: "bob@example.com" }
+          row_count: 2
+          columns: [id, name, email]
+        prompt: "Show me the active users"
+      - name: count_orders
+        input:
+          sql: "SELECT COUNT(*) as total FROM orders WHERE created_at > $1"
+          params: ["2025-01-01"]
+        prompt: "How many orders since January?"
+
+  list_tables:
+    description: List all tables in the database with their column information
+    agent:
+      description: |
+        List database tables and their schemas. Use this first to understand
+        the database structure before writing queries.
+      when_to_use:
+        - User asks what's in the database
+        - Agent needs to understand schema before querying
+        - User asks about table structure
+      tips:
+        - Call this first before attempting any query
+        - Use the column types to write correct SQL
+    parameters:
+      schema:
+        type: string
+        default: public
+        description: Database schema to list tables from
+    returns:
+      type: object
+      properties:
+        tables:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Table name
+              row_count_estimate:
+                type: integer
+                description: Approximate row count
+              columns:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    type:
+                      type: string
+                    nullable:
+                      type: boolean
+    permissions:
+      - type: database
+        target: postgres
+        methods: [SELECT]
+    side_effects: read
+    cost: free
+    idempotent: true
+    cache:
+      ttl: 300
+    examples:
+      - name: list_public_tables
+        input:
+          schema: public
+        prompt: "What tables are in the database?"
+
+  execute_mutation:
+    description: Execute an INSERT, UPDATE, or DELETE statement
+    agent:
+      description: |
+        Execute a data modification query. This is a WRITE operation —
+        always confirm with the user before executing. Shows affected row count.
+      when_to_use:
+        - User explicitly asks to insert, update, or delete data
+      when_not_to_use:
+        - User is just asking questions about data (use query)
+        - User hasn't explicitly confirmed the mutation
+      tips:
+        - ALWAYS confirm with the user before executing
+        - Use parameterized queries for safety
+        - Include a WHERE clause for UPDATE/DELETE to avoid affecting all rows
+        - Show the user what will be affected before executing
+    parameters:
+      sql:
+        type: string
+        required: true
+        description: INSERT, UPDATE, or DELETE statement
+      params:
+        type: array
+        items:
+          type: string
+        description: Parameterized values
+    returns:
+      type: object
+      properties:
+        affected_rows:
+          type: integer
+          description: Number of rows affected
+    permissions:
+      - type: database
+        target: postgres
+        methods: [INSERT, UPDATE, DELETE]
+        reason: Data modification access
+    side_effects: write
+    cost: low
+    idempotent: false
+    examples:
+      - name: update_user
+        input:
+          sql: "UPDATE users SET active = false WHERE id = $1"
+          params: ["42"]
+        output:
+          affected_rows: 1
+        prompt: "Deactivate user 42"

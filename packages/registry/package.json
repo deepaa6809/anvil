@@ -1,0 +1,17 @@
+{
+  "name": "@anvil-tools/registry",
+  "version": "0.3.0",
+  "description": "Registry client for publishing, discovering, and installing Anvil tool definitions",
+  "type": "module",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": { "build": "tsup", "test": "vitest run --passWithNoTests", "typecheck": "tsc --noEmit", "clean": "rm -rf dist" },
+  "dependencies": {
+    "@anvil-tools/schema": "workspace:*"
+  },
+  "devDependencies": { "typescript": "^5.8.0", "tsup": "^8.4.0" },
+  "repository": {"type": "git", "url": "https://github.com/64envy64/anvil.git"},
+  "license": "Apache-2.0"
+}

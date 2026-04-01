@@ -1,0 +1,197 @@
+anvil: "1.0"
+
+service:
+  name: browser-tools
+  version: "1.0.0"
+  description: Browser automation tools for AI agents
+  tags: [browser, web, automation, scraping]
+
+tools:
+  navigate:
+    description: Navigate to a URL and return the page content
+    agent:
+      description: |
+        Load a web page and return its text content. Handles JavaScript rendering.
+        Use for reading web pages, documentation, or any public URL.
+      when_to_use:
+        - User asks to read a web page
+        - Agent needs to fetch documentation
+        - User provides a URL to analyze
+      when_not_to_use:
+        - URL points to a binary file (PDF, image)
+        - User wants to interact with the page (use click/type tools)
+      tips:
+        - Use wait_for to ensure dynamic content loads
+        - Set timeout appropriately for slow sites
+    parameters:
+      url:
+        type: string
+        required: true
+        description: URL to navigate to
+        validation:
+          pattern: "^https?://"
+      wait_for:
+        type: enum
+        values: [load, domcontentloaded, networkidle]
+        default: load
+        description: When to consider the page ready
+      timeout:
+        type: integer
+        default: 30000
+        description: Navigation timeout in milliseconds
+        validation:
+          minimum: 1000
+          maximum: 60000
+    returns:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Page title
+        content:
+          type: string
+          description: Extracted text content
+        url:
+          type: string
+          description: Final URL (after redirects)
+        status:
+          type: integer
+          description: HTTP status code
+    permissions:
+      - type: network
+        target: "*"
+        methods: [GET]
+        reason: Web page access
+      - type: subprocess
+        target: chromium
+        reason: Browser process for rendering
+    side_effects: read
+    cost: medium
+    idempotent: true
+    cache:
+      ttl: 120
+      vary_by: [url]
+    errors:
+      timeout:
+        status: 408
+        message: Navigation timed out
+        agent_hint: Increase timeout or try with wait_for=domcontentloaded
+        retryable: true
+      blocked:
+        status: 403
+        message: Access blocked by the website
+        agent_hint: The site may block automated access. Inform the user.
+    examples:
+      - name: read_docs
+        input:
+          url: "https://docs.anthropic.com/en/docs/overview"
+          wait_for: networkidle
+        output:
+          title: "Overview - Anthropic Docs"
+          content: "Welcome to Claude..."
+          url: "https://docs.anthropic.com/en/docs/overview"
+          status: 200
+        prompt: "Read the Anthropic docs overview page"
+
+  screenshot:
+    description: Take a screenshot of a web page
+    agent:
+      description: |
+        Capture a screenshot of a URL. Returns the image as base64.
+        Useful for visual verification, design review, or bug reporting.
+      when_to_use:
+        - User wants to see what a page looks like
+        - Agent needs visual context
+        - Bug reporting with visual evidence
+      tips:
+        - Use full_page=true for long pages
+        - Set viewport dimensions to match target device
+    parameters:
+      url:
+        type: string
+        required: true
+        description: URL to screenshot
+        validation:
+          pattern: "^https?://"
+      full_page:
+        type: boolean
+        default: false
+        description: Capture entire scrollable page
+      viewport_width:
+        type: integer
+        default: 1280
+        description: Viewport width in pixels
+      viewport_height:
+        type: integer
+        default: 720
+        description: Viewport height in pixels
+    returns:
+      type: object
+      properties:
+        image:
+          type: string
+          description: Base64-encoded PNG screenshot
+        width:
+          type: integer
+        height:
+          type: integer
+    permissions:
+      - type: network
+        target: "*"
+      - type: subprocess
+        target: chromium
+    side_effects: read
+    cost: medium
+    idempotent: true
+    examples:
+      - name: screenshot_homepage
+        input:
+          url: "https://anthropic.com"
+          viewport_width: 1440
+          viewport_height: 900
+        prompt: "Take a screenshot of anthropic.com"
+
+  extract_links:
+    description: Extract all links from a web page
+    agent:
+      description: |
+        Get all links from a page with their text and URLs.
+        Useful for crawling, link analysis, or finding specific resources.
+      when_to_use:
+        - User wants to know what's on a page
+        - Agent needs to find specific links
+    parameters:
+      url:
+        type: string
+        required: true
+        description: URL to extract links from
+      filter:
+        type: string
+        description: Regex pattern to filter links
+    returns:
+      type: object
+      properties:
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              href:
+                type: string
+              is_external:
+                type: boolean
+        count:
+          type: integer
+    side_effects: read
+    cost: medium
+    idempotent: true
+    cache:
+      ttl: 300
+    examples:
+      - name: extract_doc_links
+        input:
+          url: "https://docs.anthropic.com"
+          filter: "/docs/"
+        prompt: "Get all documentation links from the Anthropic docs"

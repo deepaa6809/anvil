@@ -1,0 +1,199 @@
+anvil: "1.0"
+
+service:
+  name: weather-tools
+  version: "1.0.0"
+  description: Weather data tools for AI agents
+  base_url: https://api.weather.com
+  auth:
+    type: api_key
+    header: X-API-Key
+    env_var: WEATHER_API_KEY
+  default_permissions:
+    - type: network
+      target: api.weather.com
+      methods: [GET]
+      reason: Weather API access
+
+tools:
+  get_current_weather:
+    description: Retrieve current weather conditions for a specific location
+    agent:
+      description: |
+        Use this tool to get real-time weather data for any location worldwide.
+        Best for: current conditions, temperature checks, weather-dependent planning.
+        Not for: forecasts (use get_forecast), historical data.
+      when_to_use:
+        - User asks about current weather
+        - User needs to make weather-dependent decisions
+        - "What's the weather like in X?"
+      when_not_to_use:
+        - User asks about future weather (use get_forecast)
+        - User asks about historical weather data
+      tips:
+        - Prefer city names over coordinates for better accuracy
+        - Default to celsius unless user specifies fahrenheit
+    parameters:
+      location:
+        type: string
+        required: true
+        description: City name, address, or coordinates (lat,lng)
+        examples:
+          - "San Francisco, CA"
+          - "London, UK"
+          - "37.7749,-122.4194"
+        validation:
+          min_length: 1
+          max_length: 200
+      units:
+        type: enum
+        values: [celsius, fahrenheit, kelvin]
+        default: celsius
+        description: Temperature unit for the response
+    returns:
+      type: object
+      properties:
+        temperature:
+          type: number
+          description: Current temperature in requested units
+        feels_like:
+          type: number
+          description: '"Feels like" temperature'
+        humidity:
+          type: number
+          description: Relative humidity (0-100)
+        conditions:
+          type: string
+          description: Human-readable weather conditions
+        wind_speed:
+          type: number
+          description: Wind speed in km/h
+    errors:
+      location_not_found:
+        status: 404
+        message: The specified location could not be found
+        agent_hint: Ask the user to clarify or correct the location name
+      rate_limited:
+        status: 429
+        message: API rate limit exceeded
+        agent_hint: Wait a moment before retrying, or inform the user
+        retryable: true
+    side_effects: none
+    cost: low
+    idempotent: true
+    cache:
+      ttl: 300
+      vary_by: [location, units]
+    examples:
+      - name: basic_city_query
+        description: Basic weather lookup for a US city
+        input:
+          location: "San Francisco, CA"
+          units: celsius
+        output:
+          temperature: 18
+          feels_like: 16
+          humidity: 72
+          conditions: "Partly cloudy"
+          wind_speed: 15
+        prompt: "What's the weather in San Francisco?"
+      - name: coordinates_query
+        input:
+          location: "37.7749,-122.4194"
+          units: fahrenheit
+        output:
+          temperature: 64.4
+          feels_like: 60.8
+          humidity: 72
+          conditions: "Partly cloudy"
+          wind_speed: 9.3
+
+  get_forecast:
+    description: Get weather forecast for the next several days
+    agent:
+      description: |
+        Use this tool to get a multi-day weather forecast for a location.
+        Returns daily high/low temperatures and conditions.
+      when_to_use:
+        - User asks about future weather
+        - User is planning an outdoor event
+        - "Will it rain this weekend?"
+      when_not_to_use:
+        - User asks about current weather (use get_current_weather)
+      tips:
+        - Default to 3 days if the user doesn't specify
+        - Maximum 10 days
+    parameters:
+      location:
+        type: string
+        required: true
+        description: City name or coordinates
+      days:
+        type: integer
+        default: 3
+        description: Number of days to forecast (1-10)
+        validation:
+          minimum: 1
+          maximum: 10
+      units:
+        type: enum
+        values: [celsius, fahrenheit]
+        default: celsius
+        description: Temperature unit
+    returns:
+      type: object
+      properties:
+        location:
+          type: string
+          description: Resolved location name
+        forecast:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                description: Date (YYYY-MM-DD)
+              high:
+                type: number
+                description: High temperature
+              low:
+                type: number
+                description: Low temperature
+              conditions:
+                type: string
+                description: Expected conditions
+              precipitation_chance:
+                type: number
+                description: Chance of precipitation (0-100)
+    side_effects: none
+    cost: low
+    idempotent: true
+    cache:
+      ttl: 3600
+      vary_by: [location, days, units]
+    examples:
+      - name: weekend_forecast
+        input:
+          location: "New York, NY"
+          days: 3
+          units: celsius
+        output:
+          location: "New York, NY"
+          forecast:
+            - date: "2025-01-15"
+              high: 5
+              low: -2
+              conditions: "Snow showers"
+              precipitation_chance: 70
+            - date: "2025-01-16"
+              high: 3
+              low: -4
+              conditions: "Cloudy"
+              precipitation_chance: 20
+            - date: "2025-01-17"
+              high: 7
+              low: 0
+              conditions: "Partly sunny"
+              precipitation_chance: 10
+        prompt: "What's the weather forecast for New York this weekend?"

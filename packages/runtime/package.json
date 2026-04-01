@@ -1,0 +1,33 @@
+{
+  "name": "@anvil-tools/runtime",
+  "version": "0.3.0",
+  "description": "Runtime validation, permission enforcement, and middleware for Anvil tools",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@anvil-tools/schema": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "tsup": "^8.4.0",
+    "vitest": "^3.1.0"
+  },
+  "repository": {"type": "git", "url": "https://github.com/64envy64/anvil.git"},
+  "license": "Apache-2.0"
+}

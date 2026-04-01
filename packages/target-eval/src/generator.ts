@@ -1,0 +1,250 @@
+/**
+ * Eval Harness Generator
+ *
+ * Generates test suites from Anvil tool definitions.
+ * Produces:
+ *   1. Schema validation tests (input/output contract testing)
+ *   2. Test fixtures JSON (all examples as structured data)
+ *   3. Agent eval scaffolding (tool selection accuracy tests)
+ */
+
+import type { AnvilIR, AnvilIRTool, AnvilField } from '@anvil-tools/schema';
+import { toolParametersToJsonSchema, fieldToJsonSchema } from '@anvil-tools/schema';
+import type { TargetResult, GeneratedFile } from '@anvil-tools/compiler';
+
+export interface EvalOptions {
+  framework?: 'vitest' | 'jest';
+}
+
+export function generateEval(ir: AnvilIR, options: EvalOptions = {}): TargetResult {
+  const framework = options.framework ?? 'vitest';
+  const files: GeneratedFile[] = [];
+
+  // 1. Test fixtures
+  files.push({
+    path: 'fixtures.json',
+    content: JSON.stringify(buildFixtures(ir), null, 2),
+    type: 'test',
+  });
+
+  // 2. Schema validation tests
+  files.push({
+    path: `schema.test.ts`,
+    content: generateSchemaTests(ir, framework),
+    type: 'test',
+  });
+
+  // 3. Agent eval scaffolding
+  files.push({
+    path: 'agent-eval.test.ts',
+    content: generateAgentEval(ir, framework),
+    type: 'test',
+  });
+
+  // 4. vitest/jest config
+  if (framework === 'vitest') {
+    files.push({
+      path: 'vitest.config.ts',
+      content: `import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: { timeout: 30_000 } });\n`,
+      type: 'config',
+    });
+  }
+
+  // 5. Package.json for the test project
+  files.push({
+    path: 'package.json',
+    content: JSON.stringify({
+      name: `${ir.service.name}-eval`,
+      private: true,
+      type: 'module',
+      scripts: {
+        test: framework === 'vitest' ? 'vitest run' : 'jest',
+        'test:watch': framework === 'vitest' ? 'vitest' : 'jest --watch',
+      },
+      devDependencies: {
+        [framework]: framework === 'vitest' ? '^3.1.0' : '^29.0.0',
+        typescript: '^5.8.0',
+        ajv: '^8.17.0',
+        ...(framework === 'vitest' ? {} : { 'ts-jest': '^29.0.0', '@types/jest': '^29.0.0' }),
+      },
+    }, null, 2),
+    type: 'config',
+  });
+
+  return { target: 'eval', files };
+}
+
+function buildFixtures(ir: AnvilIR) {
+  return {
+    service: ir.service.name,
+    version: ir.service.version,
+    tools: ir.tools.map(tool => ({
+      name: tool.name,
+      inputSchema: toolParametersToJsonSchema(tool),
+      outputSchema: tool.returns ? fieldToJsonSchema(tool.returns) : null,
+      examples: tool.examples.map(ex => ({
+        name: ex.name,
+        description: ex.description,
+        input: ex.input,
+        output: ex.output,
+        prompt: ex.prompt,
+      })),
+      requiredParams: tool.parameters.filter(p => p.required).map(p => p.name),
+      optionalParams: tool.parameters.filter(p => !p.required).map(p => p.name),
+      defaults: Object.fromEntries(
+        tool.parameters
+          .filter(p => p.default_value !== undefined)
+          .map(p => [p.name, p.default_value]),
+      ),
+    })),
+  };
+}
+
+function generateSchemaTests(ir: AnvilIR, framework: string): string {
+  const importLine = framework === 'vitest'
+    ? `import { describe, it, expect } from 'vitest';`
+    : '';
+
+  const toolTests = ir.tools.map(tool => {
+    const inputSchema = JSON.stringify(toolParametersToJsonSchema(tool));
+    const outputSchema = tool.returns ? JSON.stringify(fieldToJsonSchema(tool.returns)) : 'null';
+
+    const exampleTests = tool.examples.map((ex, i) => `
+    it('validates example: ${ex.name}', () => {
+      const input = ${JSON.stringify(ex.input)};
+      const valid = validateSchema(inputSchema, input);
+      expect(valid).toBe(true);
+    });${ex.output !== undefined ? `
+
+    it('validates example output: ${ex.name}', () => {
+      ${outputSchema !== 'null' ? `const output = ${JSON.stringify(ex.output)};
+      const valid = validateSchema(outputSchema!, output);
+      expect(valid).toBe(true);` : '// No output schema defined'}
+    });` : ''}`).join('\n');
+
+    const requiredParams = tool.parameters.filter(p => p.required);
+    const requiredTests = requiredParams.length > 0 ? `
+    it('rejects missing required parameters', () => {
+      const valid = validateSchema(inputSchema, {});
+      expect(valid).toBe(false);
+    });
+
+${requiredParams.map(p => `    it('rejects missing required param: ${p.name}', () => {
+      const input = ${JSON.stringify(Object.fromEntries(
+        requiredParams.filter(rp => rp.name !== p.name).map(rp => [rp.name, placeholderValue(rp.field)])
+      ))};
+      const valid = validateSchema(inputSchema, input);
+      expect(valid).toBe(false);
+    });`).join('\n\n')}` : '';
+
+    return `
+  describe('${tool.name}', () => {
+    const inputSchema = ${inputSchema};
+    const outputSchema = ${outputSchema};
+${exampleTests}
+${requiredTests}
+  });`;
+  }).join('\n');
+
+  return `/**
+ * Schema Validation Tests for ${ir.service.name}
+ * Generated by Anvil v${ir.meta.anvil_version}
+ */
+
+${importLine}
+import Ajv from 'ajv';
+
+const ajv = new Ajv({ allErrors: true });
+
+function validateSchema(schema: Record<string, unknown>, data: unknown): boolean {
+  const validate = ajv.compile(schema);
+  return validate(data) as boolean;
+}
+
+describe('${ir.service.name} — Schema Validation', () => {
+${toolTests}
+});
+`;
+}
+
+function generateAgentEval(ir: AnvilIR, framework: string): string {
+  const importLine = framework === 'vitest'
+    ? `import { describe, it, expect } from 'vitest';`
+    : '';
+
+  const promptExamples = ir.tools.flatMap(tool =>
+    tool.examples
+      .filter(ex => ex.prompt)
+      .map(ex => ({
+        toolName: tool.name,
+        prompt: ex.prompt!,
+        exampleName: ex.name,
+      })),
+  );
+
+  const tests = promptExamples.map(pe => `
+    it('selects ${pe.toolName} for: "${pe.prompt}"', async () => {
+      const selected = await selectTool('${pe.prompt}', toolNames);
+      expect(selected).toBe('${pe.toolName}');
+    });`).join('\n');
+
+  return `/**
+ * Agent Tool Selection Eval for ${ir.service.name}
+ * Generated by Anvil v${ir.meta.anvil_version}
+ *
+ * These tests verify that an LLM agent correctly selects the right tool
+ * given a natural language prompt. Implement the selectTool function
+ * with your LLM of choice.
+ */
+
+${importLine}
+import fixtures from './fixtures.json' with { type: 'json' };
+
+const toolNames = fixtures.tools.map(t => t.name);
+
+/**
+ * TODO: Implement this function with your LLM.
+ *
+ * Given a user prompt and available tool names, return which tool should be used.
+ *
+ * Example implementation with Claude:
+ *
+ *   import Anthropic from '@anthropic-ai/sdk';
+ *   const client = new Anthropic();
+ *
+ *   async function selectTool(prompt: string, tools: string[]): Promise<string> {
+ *     const response = await client.messages.create({
+ *       model: 'claude-opus-4-6',
+ *       max_tokens: 100,
+ *       messages: [{ role: 'user', content: prompt }],
+ *       tools: tools.map(name => ({
+ *         name,
+ *         description: fixtures.tools.find(t => t.name === name)?.inputSchema?.description ?? '',
+ *         input_schema: fixtures.tools.find(t => t.name === name)?.inputSchema ?? { type: 'object', properties: {} },
+ *       })),
+ *       tool_choice: { type: 'any' },
+ *     });
+ *     const toolUse = response.content.find(b => b.type === 'tool_use');
+ *     return toolUse?.name ?? '';
+ *   }
+ */
+async function selectTool(prompt: string, tools: string[]): Promise<string> {
+  throw new Error('Implement selectTool with your LLM — see comment above');
+}
+
+describe('${ir.service.name} — Agent Tool Selection', () => {
+${tests.length > 0 ? tests : `
+    it.skip('no prompt examples defined — add prompt fields to examples', () => {});`}
+});
+`;
+}
+
+function placeholderValue(f: AnvilField): unknown {
+  switch (f.type) {
+    case 'string': return 'test';
+    case 'number': case 'integer': return 0;
+    case 'boolean': return true;
+    case 'enum': return f.values[0];
+    default: return null;
+  }
+}

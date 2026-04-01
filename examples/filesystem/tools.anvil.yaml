@@ -1,0 +1,177 @@
+anvil: "1.0"
+
+service:
+  name: filesystem-tools
+  version: "1.0.0"
+  description: Filesystem operations for AI agents with permission controls
+
+tools:
+  read_file:
+    description: Read the contents of a file
+    agent:
+      description: |
+        Read a file from the filesystem. Returns the file content as text.
+        Respects permission boundaries — only allowed paths can be accessed.
+      when_to_use:
+        - User asks to read or view a file
+        - Agent needs to inspect source code or config
+      when_not_to_use:
+        - For binary files (images, videos)
+        - For very large files (>10MB) — use read_file_lines instead
+      tips:
+        - Always use absolute paths
+        - Check file existence before reading if unsure
+    parameters:
+      path:
+        type: string
+        required: true
+        description: Absolute path to the file
+        validation:
+          min_length: 1
+      encoding:
+        type: enum
+        values: [utf-8, ascii, base64]
+        default: utf-8
+        description: File encoding
+    returns:
+      type: object
+      properties:
+        content:
+          type: string
+          description: File contents
+        size:
+          type: integer
+          description: File size in bytes
+        modified:
+          type: string
+          description: Last modified timestamp (ISO 8601)
+    permissions:
+      - type: filesystem
+        target: "/**"
+        methods: [read]
+        reason: Read access to filesystem
+    side_effects: read
+    cost: free
+    idempotent: true
+    examples:
+      - name: read_config
+        input:
+          path: "/app/config.json"
+          encoding: utf-8
+        output:
+          content: '{"port": 3000, "host": "localhost"}'
+          size: 36
+          modified: "2025-01-15T10:30:00Z"
+        prompt: "Read the config file at /app/config.json"
+
+  write_file:
+    description: Write content to a file, creating it if it doesn't exist
+    agent:
+      description: |
+        Write content to a file. Creates the file if it doesn't exist,
+        overwrites if it does. Use with caution — this is a write operation.
+      when_to_use:
+        - User asks to create or modify a file
+        - Agent needs to save generated content
+      tips:
+        - Always confirm with the user before overwriting existing files
+        - Create parent directories if needed
+    parameters:
+      path:
+        type: string
+        required: true
+        description: Absolute path for the file
+      content:
+        type: string
+        required: true
+        description: Content to write
+      create_dirs:
+        type: boolean
+        default: true
+        description: Create parent directories if they don't exist
+    returns:
+      type: object
+      properties:
+        bytes_written:
+          type: integer
+          description: Number of bytes written
+        created:
+          type: boolean
+          description: Whether the file was newly created
+    permissions:
+      - type: filesystem
+        target: "/**"
+        methods: [write]
+        reason: Write access to filesystem
+    side_effects: write
+    cost: free
+    idempotent: true
+    examples:
+      - name: write_config
+        input:
+          path: "/app/output.txt"
+          content: "Hello, World!"
+        output:
+          bytes_written: 13
+          created: true
+        prompt: "Write 'Hello, World!' to /app/output.txt"
+
+  list_directory:
+    description: List files and directories at a given path
+    agent:
+      description: |
+        List the contents of a directory. Returns file names, types, and sizes.
+      when_to_use:
+        - User asks what's in a directory
+        - Agent needs to explore project structure
+    parameters:
+      path:
+        type: string
+        required: true
+        description: Absolute path to the directory
+      recursive:
+        type: boolean
+        default: false
+        description: Whether to list recursively
+      pattern:
+        type: string
+        description: Glob pattern to filter results (e.g. "*.ts")
+    returns:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: File or directory name
+              type:
+                type: enum
+                values: [file, directory, symlink]
+                description: Entry type
+              size:
+                type: integer
+                description: Size in bytes (files only)
+    permissions:
+      - type: filesystem
+        target: "/**"
+        methods: [read]
+    side_effects: read
+    cost: free
+    idempotent: true
+    examples:
+      - name: list_src
+        input:
+          path: "/app/src"
+          pattern: "*.ts"
+        output:
+          entries:
+            - name: "index.ts"
+              type: "file"
+              size: 1024
+            - name: "utils.ts"
+              type: "file"
+              size: 512
+        prompt: "List all TypeScript files in /app/src"

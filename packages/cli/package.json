@@ -1,0 +1,42 @@
+{
+  "name": "@anvil-tools/cli",
+  "version": "0.3.0",
+  "description": "CLI for the Anvil tool compiler",
+  "type": "module",
+  "bin": {
+    "anvil": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@anvil-tools/schema": "workspace:*",
+    "@anvil-tools/compiler": "workspace:*",
+    "@anvil-tools/registry": "workspace:*",
+    "commander": "^13.1.0",
+    "chalk": "^5.4.0",
+    "glob": "^11.0.0",
+    "chokidar": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "tsup": "^8.4.0",
+    "vitest": "^3.1.0",
+    "@types/node": "^22.0.0"
+  },
+  "repository": {"type": "git", "url": "https://github.com/64envy64/anvil.git"},
+  "license": "Apache-2.0"
+}

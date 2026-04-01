@@ -1,0 +1,340 @@
+anvil: "1.0"
+
+service:
+  name: github-tools
+  version: "1.0.0"
+  description: GitHub API tools for AI agents — issues, pull requests, and repositories
+  base_url: https://api.github.com
+  auth:
+    type: bearer
+    env_var: GITHUB_TOKEN
+  default_permissions:
+    - type: network
+      target: api.github.com
+      methods: [GET, POST, PATCH]
+  tags: [github, git, devtools]
+
+tools:
+  create_issue:
+    description: Create a new issue in a GitHub repository
+    agent:
+      description: |
+        Create a GitHub issue. Use this when the user wants to file a bug report,
+        feature request, or track a task. Requires owner/repo format.
+      when_to_use:
+        - User wants to create a bug report
+        - User wants to file a feature request
+        - Agent identifies a problem that should be tracked
+      when_not_to_use:
+        - User wants to comment on an existing issue (use add_issue_comment)
+        - User wants to create a PR (use create_pull_request)
+      tips:
+        - Always include a clear, descriptive title
+        - Use markdown in the body for formatting
+        - Add labels when the issue type is clear
+    parameters:
+      owner:
+        type: string
+        required: true
+        description: Repository owner (user or organization)
+      repo:
+        type: string
+        required: true
+        description: Repository name
+      title:
+        type: string
+        required: true
+        description: Issue title
+        validation:
+          min_length: 1
+          max_length: 256
+      body:
+        type: string
+        description: Issue body (markdown supported)
+      labels:
+        type: array
+        items:
+          type: string
+        description: Labels to apply
+      assignees:
+        type: array
+        items:
+          type: string
+        description: GitHub usernames to assign
+    returns:
+      type: object
+      properties:
+        number:
+          type: integer
+          description: Issue number
+        url:
+          type: string
+          description: HTML URL of the created issue
+        state:
+          type: string
+          description: Issue state (open)
+    side_effects: write
+    cost: free
+    idempotent: false
+    errors:
+      not_found:
+        status: 404
+        message: Repository not found or no access
+        agent_hint: Check the owner/repo format and verify the user has access
+      validation_failed:
+        status: 422
+        message: Validation failed (e.g., title too long)
+        agent_hint: Shorten the title or fix the request body
+    examples:
+      - name: bug_report
+        input:
+          owner: anthropics
+          repo: claude-code
+          title: "Bug: completions timeout on large files"
+          body: "When editing files over 10MB, completions time out after 30s."
+          labels: [bug]
+        output:
+          number: 42
+          url: "https://github.com/anthropics/claude-code/issues/42"
+          state: open
+        prompt: "Create a bug report for timeout issues in claude-code"
+
+  search_issues:
+    description: Search for issues and pull requests across GitHub
+    agent:
+      description: |
+        Search GitHub issues and PRs using GitHub's search syntax.
+        Returns matching issues with titles, states, and URLs.
+        Supports qualifiers like repo:, label:, is:open, is:pr.
+      when_to_use:
+        - User asks about existing issues
+        - User wants to find related bugs
+        - Agent needs to check for duplicates before creating an issue
+      tips:
+        - Use "is:open" to filter to open issues
+        - Use "repo:owner/name" to scope to a specific repo
+        - Use "label:bug" to filter by label
+    parameters:
+      query:
+        type: string
+        required: true
+        description: Search query (supports GitHub search syntax)
+        examples:
+          - "repo:anthropics/claude-code is:open label:bug"
+          - "timeout error is:issue is:open"
+      per_page:
+        type: integer
+        default: 10
+        description: Results per page (max 100)
+        validation:
+          minimum: 1
+          maximum: 100
+    returns:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          description: Total matching results
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              number:
+                type: integer
+              title:
+                type: string
+              state:
+                type: string
+              url:
+                type: string
+              labels:
+                type: array
+                items:
+                  type: string
+    side_effects: read
+    cost: free
+    idempotent: true
+    cache:
+      ttl: 60
+      vary_by: [query]
+    examples:
+      - name: search_bugs
+        input:
+          query: "repo:anthropics/claude-code is:open label:bug"
+          per_page: 5
+        prompt: "Find open bugs in the claude-code repo"
+
+  get_pull_request:
+    description: Get details of a specific pull request
+    agent:
+      description: |
+        Retrieve full details of a pull request including title, body, status,
+        files changed, and review state.
+      when_to_use:
+        - User asks about a specific PR
+        - Agent needs to understand PR changes
+    parameters:
+      owner:
+        type: string
+        required: true
+        description: Repository owner
+      repo:
+        type: string
+        required: true
+        description: Repository name
+      pull_number:
+        type: integer
+        required: true
+        description: Pull request number
+    returns:
+      type: object
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        body:
+          type: string
+        merged:
+          type: boolean
+        additions:
+          type: integer
+        deletions:
+          type: integer
+        changed_files:
+          type: integer
+        url:
+          type: string
+    side_effects: read
+    cost: free
+    idempotent: true
+    cache:
+      ttl: 30
+    examples:
+      - name: get_pr
+        input:
+          owner: anthropics
+          repo: claude-code
+          pull_number: 100
+        prompt: "Show me PR #100 in claude-code"
+
+  add_issue_comment:
+    description: Add a comment to an existing GitHub issue
+    agent:
+      description: |
+        Post a comment on a GitHub issue or pull request.
+        Use when the user wants to respond to or update an existing issue.
+      when_to_use:
+        - User wants to comment on an issue
+        - Agent needs to add context to a tracked issue
+      when_not_to_use:
+        - User wants to create a new issue (use create_issue)
+      tips:
+        - Use markdown for formatting
+        - Reference other issues with #number
+    parameters:
+      owner:
+        type: string
+        required: true
+        description: Repository owner
+      repo:
+        type: string
+        required: true
+        description: Repository name
+      issue_number:
+        type: integer
+        required: true
+        description: Issue or PR number
+      body:
+        type: string
+        required: true
+        description: Comment body (markdown supported)
+    returns:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Comment ID
+        url:
+          type: string
+          description: HTML URL of the comment
+    side_effects: write
+    cost: free
+    idempotent: false
+    examples:
+      - name: add_comment
+        input:
+          owner: anthropics
+          repo: claude-code
+          issue_number: 42
+          body: "This is fixed in v0.3.0. Closing."
+        output:
+          id: 12345
+          url: "https://github.com/anthropics/claude-code/issues/42#issuecomment-12345"
+        prompt: "Comment on issue 42 that it's fixed"
+
+  list_repo_files:
+    description: List files and directories in a GitHub repository path
+    agent:
+      description: |
+        Get the contents of a directory in a GitHub repo. Returns file names, types,
+        and sizes. Use to explore repository structure.
+      when_to_use:
+        - User asks what files are in a repo
+        - Agent needs to understand project structure
+        - User asks about a specific directory
+      tips:
+        - Use path="" for root directory
+        - Combine with get_pull_request to understand what files a PR changed
+    parameters:
+      owner:
+        type: string
+        required: true
+        description: Repository owner
+      repo:
+        type: string
+        required: true
+        description: Repository name
+      path:
+        type: string
+        default: ""
+        description: Directory path within the repo
+      ref:
+        type: string
+        description: Branch, tag, or commit SHA (default branch if omitted)
+    returns:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: enum
+                values: [file, dir, symlink, submodule]
+              size:
+                type: integer
+              path:
+                type: string
+    side_effects: read
+    cost: free
+    idempotent: true
+    cache:
+      ttl: 120
+    examples:
+      - name: list_root
+        input:
+          owner: anthropics
+          repo: claude-code
+        output:
+          entries:
+            - { name: "src", type: "dir", size: 0, path: "src" }
+            - { name: "package.json", type: "file", size: 1024, path: "package.json" }
+            - { name: "README.md", type: "file", size: 4096, path: "README.md" }
+        prompt: "What files are in the claude-code repo?"

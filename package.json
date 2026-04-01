@@ -1,0 +1,28 @@
+{
+  "name": "anvil-tools",
+  "private": true,
+  "description": "Forge once. Run everywhere. — The universal tool compiler for AI agents.",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.8.0",
+    "tsup": "^8.4.0",
+    "vitest": "^3.1.0",
+    "@types/node": "^22.0.0"
+  },
+  "packageManager": "pnpm@10.6.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "Apache-2.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "better-sqlite3"]
+  }
+}

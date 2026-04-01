@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" fill="none">
+  <rect width="800" height="200" rx="12" fill="#09090B"/>
+  <rect x="0.5" y="0.5" width="799" height="199" rx="11.5" stroke="#1E1E22"/>
+
+  <!-- Raven mark -->
+  <g transform="translate(320, 30) scale(1.8)">
+    <path d="M7 18.5L2.5 17L7 14.5L9 11C11 8 14 7 17.5 7.5L22 8.5L24 7L23 10L26 11C28.5 12.5 29.5 15 29 18L28 21L25 24L20 26L14 25L10 22L7 18.5Z" fill="#D97706"/>
+    <circle cx="13" cy="13.5" r="1.5" fill="#09090B"/>
+    <rect x="8" y="28" width="20" height="3" rx="1" fill="#D97706" opacity="0.5"/>
+    <rect x="12" y="26" width="12" height="3" rx="0.5" fill="#D97706" opacity="0.35"/>
+  </g>
+
+  <!-- Text -->
+  <text x="400" y="132" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="700" letter-spacing="-1" fill="#EDEAE6">ANVIL</text>
+  <text x="400" y="162" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#9E9B97" letter-spacing="3">FORGE ONCE. RUN EVERYWHERE.</text>
+
+  <!-- Subtle line -->
+  <line x1="300" y1="175" x2="500" y2="175" stroke="#1E1E22" stroke-width="1"/>
+</svg>

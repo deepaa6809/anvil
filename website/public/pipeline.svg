@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 120" fill="none">
+  <rect width="800" height="120" rx="10" fill="#09090B"/>
+  <rect x="0.5" y="0.5" width="799" height="119" rx="9.5" stroke="#1E1E22"/>
+
+  <!-- Source -->
+  <rect x="20" y="30" width="130" height="60" rx="8" stroke="#27272B" fill="#131316"/>
+  <text x="85" y="55" text-anchor="middle" font-family="monospace" font-size="11" fill="#D97706">tools.anvil.yaml</text>
+  <text x="85" y="72" text-anchor="middle" font-family="monospace" font-size="9" fill="#5C5A56">single source</text>
+
+  <!-- Arrow 1 -->
+  <line x1="155" y1="60" x2="185" y2="60" stroke="#27272B" stroke-width="1.5"/>
+  <polygon points="185,56 193,60 185,64" fill="#27272B"/>
+
+  <!-- Compiler -->
+  <rect x="198" y="35" width="90" height="50" rx="8" fill="rgba(217,119,6,0.1)" stroke="#D97706" stroke-opacity="0.3"/>
+  <text x="243" y="57" text-anchor="middle" font-family="monospace" font-size="11" fill="#D97706" font-weight="600">anvil</text>
+  <text x="243" y="72" text-anchor="middle" font-family="monospace" font-size="9" fill="#D97706" opacity="0.6">compile</text>
+
+  <!-- Arrow 2 -->
+  <line x1="293" y1="60" x2="323" y2="60" stroke="#27272B" stroke-width="1.5"/>
+  <polygon points="323,56 331,60 323,64" fill="#27272B"/>
+
+  <!-- Targets -->
+  <g font-family="monospace" font-size="10" fill="#9E9B97">
+    <rect x="336" y="12" width="88" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="380" y="28" text-anchor="middle">MCP Server</text>
+
+    <rect x="430" y="12" width="76" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="468" y="28" text-anchor="middle">OpenAPI</text>
+
+    <rect x="512" y="12" width="56" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="540" y="28" text-anchor="middle">SDK</text>
+
+    <rect x="574" y="12" width="56" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="602" y="28" text-anchor="middle">Docs</text>
+
+    <rect x="336" y="42" width="88" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="380" y="58" text-anchor="middle">Agent Schema</text>
+
+    <rect x="430" y="42" width="60" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="460" y="58" text-anchor="middle">Eval</text>
+
+    <rect x="496" y="42" width="46" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="519" y="58" text-anchor="middle">CLI</text>
+
+    <rect x="336" y="72" width="70" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="371" y="88" text-anchor="middle">Claude</text>
+
+    <rect x="412" y="72" width="56" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="440" y="88" text-anchor="middle">GPT</text>
+
+    <rect x="474" y="72" width="76" height="24" rx="5" stroke="#27272B" fill="#131316"/>
+    <text x="512" y="88" text-anchor="middle">Vercel AI</text>
+  </g>
+
+  <!-- Count -->
+  <text x="710" y="55" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#D97706" font-weight="700">10</text>
+  <text x="710" y="72" text-anchor="middle" font-family="monospace" font-size="10" fill="#5C5A56">targets</text>
+</svg>
