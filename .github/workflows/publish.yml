@@ -16,8 +16,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -29,10 +27,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build
+        run: pnpm --filter "@anvil-tools/*" run build
 
       - name: Test
-        run: pnpm run test
+        run: pnpm --filter "@anvil-tools/*" run test
 
       - name: Publish packages
         run: pnpm -r publish --access public --no-git-checks
